@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using OneProjest.MasterBook;
 using System.IO;
+
 namespace OneProjest.Editor
 {
     public class MasterBookCreateEditor : EditorWindow
@@ -15,37 +16,54 @@ namespace OneProjest.Editor
         {
             GetWindow<MasterBookCreateEditor>();
         }
+
         private void OnGUI()
         {
+            CreateDataButton<ReminisceneData, ReminisceneDataObjectList>();
+            CreateDataButton<ReinforceItemData, ReinforceItemDataObjectList>();
+            CreateDataButton<CharacterData, CharacterDataObjectList>();
+            CreateDataButton<SkillData, SkillDataObjectList>();
+            CreateDataButton<SkillLevelData, SkillLevelDataObjectList>();
 
-            GUILayout.Label("SkillLevelData");
-            if (GUILayout.Button("CreateSkillLevelDataObjectList"))
+        }
+
+        private void CreateDataButton<TData, TDataObjectList>()
+    where TData : ScriptableObject, IMasterBookData
+    where TDataObjectList : DataObjectList<TData>
+        {
+            GUILayout.Label(typeof(TData).Name);
+            if (GUILayout.Button($"Create{typeof(TDataObjectList).Name}"))
             {
-                CreateMasterBookDataObjectList<SkillLevelDataObjectList>();
+                CreateMasterBookDataObjectList<TDataObjectList, TData>();
             }
-            
-            if (GUILayout.Button("CreateSkillLevelData"))
+            if (GUILayout.Button($"Create{typeof(TData).Name}"))
             {
-                var skillLevelData=CreateMasterBookData<SkillLevelData>();
-                var skillLevelDataObjectList=LoadMasterBookDataObjectList<SkillLevelDataObjectList>();
-                if (skillLevelDataObjectList.skillLevelDataList == null)
+                var data = CreateMasterBookData<TData>();
+                var dataObjectList = LoadMasterBookDataObjectList<TDataObjectList, TData>();
+                if (dataObjectList.dataObjectList == null)
                 {
-                    skillLevelDataObjectList.skillLevelDataList = new List<SkillLevelData>();
+                    dataObjectList.dataObjectList = new List<TData>();
                 }
-                skillLevelDataObjectList.skillLevelDataList.Add(skillLevelData);
+                dataObjectList.dataObjectList.Add(data);
             }
         }
-        private static TObjectList LoadMasterBookDataObjectList<TObjectList>()where TObjectList : ScriptableObject
+
+        private static TDataObjectList LoadMasterBookDataObjectList<TDataObjectList,TData>()
+            where TDataObjectList : DataObjectList<TData> 
+            where TData:ScriptableObject,IMasterBookData
         {
-            return AssetDatabase.LoadAssetAtPath<TObjectList>($"{MasterBookDirectoryPath}{typeof(TObjectList).Name}.asset");
+            return AssetDatabase.LoadAssetAtPath<TDataObjectList>($"{MasterBookDirectoryPath}{typeof(TDataObjectList).Name}.asset");
         }
 
-        private static void CreateMasterBookDataObjectList<TObjectList>()where TObjectList : ScriptableObject
+        public static void CreateMasterBookDataObjectList<TDataObjectList,TData>()
+            where TDataObjectList : DataObjectList<TData> 
+            where TData:ScriptableObject,IMasterBookData
         {
-            TObjectList data = CreateInstance<TObjectList>();
 
-            var path = AssetDatabase.GenerateUniqueAssetPath($"{MasterBookDirectoryPath}{ typeof(TObjectList).Name}.asset");
-            AssetDatabase.CreateAsset(data, path);
+            TDataObjectList dataObjectList = CreateInstance<TDataObjectList>();
+            var path = AssetDatabase.GenerateUniqueAssetPath($"{MasterBookDirectoryPath}{typeof(TDataObjectList).Name}.asset");
+
+            AssetDatabase.CreateAsset(dataObjectList, path);
             AssetDatabase.Refresh();
         }
 
